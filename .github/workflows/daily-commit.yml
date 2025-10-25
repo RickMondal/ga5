@@ -1,0 +1,44 @@
+name: Daily Commit - DevSync
+
+# Runs daily at 03:15 UTC (change the hour/minute to your desired UTC time)
+on:
+  schedule:
+    - cron: '15 3 * * *'   # every day at 03:15 UTC (specific minute/hour)
+  workflow_dispatch:       # allows manual run from the Actions UI or gh
+
+permissions:
+  contents: write         # allow pushing commits with the GITHUB_TOKEN
+
+jobs:
+  daily-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true   # so push uses the GITHUB_TOKEN
+
+      - name: Set up Git identity
+        run: |
+          git config user.name "DevSync Bot (daily-commit)"
+          git config user.email "23f2000340@ds.study.iitm.ac.in"
+
+      - name: Updater — 23f2000340@ds.study.iitm.ac.in
+        # THIS STEP NAME CONTAINS THE EMAIL YOU REQUESTED
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "Daily update at $TIMESTAMP UTC" >> .daily-activity.log
+          # optionally add a short "last-run" file for easy queries
+          echo "$TIMESTAMP" > .last_daily_run
+
+      - name: Commit changes
+        run: |
+          # Stage only the two files we manage
+          git add .daily-activity.log .last_daily_run || true
+          # Only commit when there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "chore(daily): update daily activity — $TIMESTAMP"
+            git push origin HEAD:main
+          else
+            echo "No changes to commit."
+          fi
